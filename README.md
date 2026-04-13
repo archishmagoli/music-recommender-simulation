@@ -63,7 +63,10 @@ user_prefs = {
 }
 ```
 
-This profile was designed to sit clearly between extremes — high enough energy to distinguish it from chill lo-fi (~0.35–0.42) but not so extreme that it collapses into metal or rock territory (~0.91–0.97).
+This profile was designed to sit clearly between extremes — high enough energy to distinguish it from chill lo-fi (~0.35–0.42) but not so extreme that it collapses into metal or rock territory (~0.91–0.97). 
+
+The songs that the recommender suggested for our user profile are below (terminal output of running application):
+![Recommended Songs](assets/terminal.png)
 
 ---
 

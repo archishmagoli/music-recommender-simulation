@@ -46,28 +46,69 @@ class Recommender:
         return "Explanation placeholder"
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
-    # TODO: Implement CSV loading logic
-    print(f"Loading songs from {csv_path}...")
-    return []
+    """Read a CSV of songs and return a list of dicts with correctly typed fields."""
+    import csv
+    songs = []
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            songs.append({
+                "id":           int(row["id"]),
+                "title":        row["title"],
+                "artist":       row["artist"],
+                "genre":        row["genre"],
+                "mood":         row["mood"],
+                "energy":       float(row["energy"]),
+                "tempo_bpm":    float(row["tempo_bpm"]),
+                "valence":      float(row["valence"]),
+                "danceability": float(row["danceability"]),
+                "acousticness": float(row["acousticness"]),
+            })
+    print(f"Loaded {len(songs)} songs.")
+    return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-    """
-    # TODO: Implement scoring logic using your Algorithm Recipe from Phase 2.
-    # Expected return format: (score, reasons)
-    return []
+    """Score a single song against user preferences using categorical bonuses and Gaussian proximity; return (score, reasons)."""
+    import math
+
+    score = 0.0
+    reasons = []
+
+    # Categorical matches
+    if song["genre"] == user_prefs.get("favorite_genre"):
+        score += 2.0
+        reasons.append(f"genre match (+2.0)")
+
+    if song["mood"] == user_prefs.get("favorite_mood"):
+        score += 1.0
+        reasons.append(f"mood match (+1.0)")
+
+    # Gaussian proximity: exp(-5 * (song_value - target)^2)
+    def gaussian(song_val: float, target: float) -> float:
+        return math.exp(-5 * (song_val - target) ** 2)
+
+    numerical = [
+        ("energy",       "target_energy",       1.5),
+        ("valence",      "target_valence",       1.0),
+        ("danceability", "target_danceability",  0.8),
+        ("acousticness", "target_acousticness",  0.7),
+    ]
+
+    for feature, pref_key, weight in numerical:
+        if pref_key in user_prefs:
+            raw = gaussian(song[feature], user_prefs[pref_key])
+            points = raw * weight
+            score += points
+            reasons.append(f"{feature} proximity ({points:+.2f})")
+
+    return score, reasons
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
-    # TODO: Implement scoring and ranking logic
-    # Expected return format: (song_dict, score, explanation)
-    return []
+    """Score all songs, sort by score descending, and return the top k as (song, score, explanation) tuples."""
+    scored = [
+        (song, score, ", ".join(reasons))
+        for song in songs
+        for score, reasons in [score_song(user_prefs, song)]
+    ]
+    ranked = sorted(scored, key=lambda x: x[1], reverse=True)
+    return ranked[:k]
