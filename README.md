@@ -28,20 +28,20 @@ Each song is scored against the user profile using the following rules:
 
 | Signal | Type | Points |
 |---|---|---|
-| Genre match | Categorical (`==`) | +2.0 |
-| Mood match | Categorical (`==`) | +1.0 |
-| Energy proximity | Gaussian × 1.5 | 0.0 – 1.5 |
+| Genre match | Categorical (`==`) | +1.5 |
+| Mood match | Categorical (`==`) | +0.75 |
+| Energy proximity | Gaussian × 2.0 | 0.0 – 2.0 |
 | Valence proximity | Gaussian × 1.0 | 0.0 – 1.0 |
-| Danceability proximity | Gaussian × 0.8 | 0.0 – 0.8 |
-| Acousticness proximity | Gaussian × 0.7 | 0.0 – 0.7 |
+| Danceability proximity | Gaussian × 0.9 | 0.0 – 0.9 |
+| Acousticness proximity | Gaussian × 0.85 | 0.0 – 0.85 |
 
-**Max possible score: 7.0.** Gaussian proximity is calculated as `exp(-5 × (song_value − target)²)`, which returns 1.0 for a perfect match and decays toward 0 as the song moves further from the user's target.
+**Max possible score: 7.0** (categorical max 2.25, numerical max 4.75). Gaussian proximity is calculated as `exp(-5 × (song_value − target)²)`, which returns 1.0 for a perfect match and decays toward 0 as the song moves further from the user's target.
 
 The final ranking sorts all 18 songs by total score descending and returns the top `k` (default: 5).
 
 ### Potential Biases
 
-- **Genre over-prioritization:** A +2.0 genre bonus can push a mediocre genre match above a near-perfect audio match from a different genre — a great metal song might never surface for an indie pop listener even if the energy and mood align closely.
+- **Genre over-prioritization:** A +1.5 genre bonus can push a mediocre genre match above a near-perfect audio match from a different genre — a great metal song might never surface for an indie pop listener even if the energy and mood align closely.
 - **Mood is an exact match:** `"happy"` and `"upbeat"` are treated as completely different, even though they're emotionally similar — the system has no concept of mood proximity.
 - **Small catalog amplifies bias:** With only 18 songs, a single genre can dominate the top-5 if several songs share the user's favorite genre, reducing diversity in results.
 
@@ -73,14 +73,13 @@ The songs that the recommender suggested for our user profile are below (termina
 
 #### Additional User Profiles
 Profile 1: High-Energy Pop 
-![Profile 1](profile_1.png)
+![Profile 1](assets/profile_1.png)
 
 Profile 2: Chill Lofi 
-![Profile 2](profile_2.png)
-
+![Profile 2](assets/profile_2.png)
 
 Profile 3: Deep Intense Rock 
-![Profile 3](profile_3.png)
+![Profile 3](assets/profile_3.png)
 
 ---
 
@@ -123,15 +122,12 @@ You can add more tests in `tests/test_recommender.py`.
 
 ### Baseline Output (Final Weights)
 
-Run with 6 profiles — 3 standard, 3 adversarial — using final weights: genre +1.5, mood +0.75, energy ×2.0, valence ×1.0, danceability ×0.9, acousticness ×0.85 (max score 7.0).
+Run with 3 profiles using final weights: genre +1.5, mood +0.75, energy ×2.0, valence ×1.0, danceability ×0.9, acousticness ×0.85 (max score 7.0).
 
 ```
-Profile: High-Energy Pop      → #1 Gym Hero (7.00)
-Profile: Chill Lofi           → #1 Library Rain (6.97)
-Profile: Deep Intense Rock    → #1 Storm Runner (7.00)
-Profile: Conflicting          → #1 Three AM Blues (4.88)  ← genre+mood bonus overpowers low energy
-Profile: The Neutralist       → #1 Midnight Coding (4.44) ← lofi wins by numerical proximity alone
-Profile: Acoustic but Intense → #1 Iron Cathedral (4.64)  ← energy beats genre in contradiction
+Profile: High-Energy Pop   → #1 Gym Hero (7.00)
+Profile: Chill Lofi        → #1 Library Rain (6.97)
+Profile: Deep Intense Rock → #1 Storm Runner (7.00)
 ```
 
 ---
@@ -140,7 +136,7 @@ Profile: Acoustic but Intense → #1 Iron Cathedral (4.64)  ← energy beats gen
 
 **What changed:** Doubled the energy weight and halved the genre weight to test whether audio feel could dominate over categorical labels.
 
-**Result:** Rankings stayed mostly the same for standard profiles — the correct songs still ranked #1. The biggest visible change was in the **Conflicting** profile: Three AM Blues dropped out of #1 entirely, replaced by Iron Cathedral (`6.09`) and Storm Runner (`5.90`), which actually matched the `target_energy: 0.90`. The system became more "honest" about the conflict. However, scores exceeded 7.00 (e.g. Gym Hero at `8.25`), breaking the max score assumption — a math side effect of doubling one weight without adjusting others.
+**Result:** The correct songs still ranked #1 across all three profiles. However, scores exceeded 7.00 (e.g. Gym Hero at `8.25`), breaking the max score assumption — a math side effect of doubling one weight without adjusting the others.
 
 **Conclusion:** More accurate for adversarial cases, but the uncapped scores make results harder to interpret. Not worth keeping.
 
@@ -150,7 +146,7 @@ Profile: Acoustic but Intense → #1 Iron Cathedral (4.64)  ← energy beats gen
 
 **What changed:** Removed the `+0.75` mood match bonus entirely, keeping all numerical weights at final values.
 
-**Result:** The **Chill Lofi** profile showed the most interesting shift — Focus Flow (`focused` mood) jumped to #1, displacing Library Rain and Midnight Coding (both `chill`). Without mood as a tiebreaker, all three lofi songs became nearly equal by audio features alone, and Focus Flow edged out by pure numerical closeness. The **Conflicting** profile also shifted: Three AM Blues dropped to #2 (`4.13`) and Iron Cathedral took #1 (`4.14`) — the genre bonus alone couldn't carry Three AM Blues anymore.
+**Result:** The **Chill Lofi** profile showed the most interesting shift — Focus Flow (`focused` mood) jumped to #1, displacing Library Rain and Midnight Coding (both `chill`). Without mood as a tiebreaker, all three lofi songs became nearly equal by audio features alone, and Focus Flow edged out by pure numerical closeness.
 
 **Conclusion:** Removing mood made rankings more "feel-based" and less label-dependent. Interesting, but mood adds real signal for distinguishing songs within the same genre — keeping it in at a modest weight (`+0.75`) is the right call.
 
@@ -172,10 +168,9 @@ Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
+Building this system made it clear how much a recommender's output depends on the numbers behind it — small weight changes shifted which songs surfaced, and the reasons were always traceable. What surprised me most was how much the results felt like real recommendations even with only 18 songs and a handful of math operations. A lot of what feels "intelligent" in apps like Spotify might be simpler under the hood than it appears.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+On the bias side, the clearest lesson was that the dataset itself carries bias before the algorithm even runs. Lo-fi was over-represented, and that skewed results for certain profiles — not because the scoring logic was wrong, but because the data reflected whoever built the catalog. That's a pattern that scales: a real system trained on uneven data would have the same problem, just harder to see.
 
 
 ---
