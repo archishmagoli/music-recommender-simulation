@@ -16,18 +16,9 @@ Replace this paragraph with your own summary of what your version does.
 ---
 
 ## How The System Works
+Real-world recommendation systems like Spotify and YouTube use a combination of **collaborative filtering** (mapping users to each other based on listening behavior, then borrowing recommendations from similar users) and **content-based filtering** (analyzing the song itself — features like tempo, valence, acousticness, and danceability — to find tracks that *sound* like what you already like). Our system focuses on the content-based side, using those same audio features from `data/songs.csv`.
 
-Explain your design in plain language.
-
-Some prompts to answer:
-
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
-
-You can include a simple diagram or bullet list if helpful.
+In this project, we are building a custom music recommender simulation. In our recommender system, each `Song` stores 5 numerical taste signals — `energy`, `valence`, `danceability`, `acousticness`, and `tempo_bpm` — plus categorical tags for `genre` and `mood`. A `UserProfile` stores a user's preferred genre, preferred mood, target energy level, and whether they lean acoustic. The `Recommender` scores each song by measuring how close it is to those preferences — categorical matches (genre, mood) add a bonus, and numerical features like energy use a **Gaussian proximity formula** that rewards closeness to the user's target rather than just high or low values. All songs are scored and sorted, and the top `k` results are returned as recommendations.
 
 ---
 
