@@ -74,24 +74,24 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     score = 0.0
     reasons = []
 
-    # Categorical matches
+    # Categorical matches (max 2.25)
     if song["genre"] == user_prefs.get("favorite_genre"):
-        score += 2.0
-        reasons.append(f"genre match (+2.0)")
+        score += 1.5
+        reasons.append(f"genre match (+1.5)")
 
     if song["mood"] == user_prefs.get("favorite_mood"):
-        score += 1.0
-        reasons.append(f"mood match (+1.0)")
+        score += 0.75
+        reasons.append(f"mood match (+0.75)")
 
-    # Gaussian proximity: exp(-5 * (song_value - target)^2)
+    # Gaussian proximity: exp(-5 * (song_value - target)^2) (max 4.75)
     def gaussian(song_val: float, target: float) -> float:
         return math.exp(-5 * (song_val - target) ** 2)
 
     numerical = [
-        ("energy",       "target_energy",       1.5),
+        ("energy",       "target_energy",       2.0),
         ("valence",      "target_valence",       1.0),
-        ("danceability", "target_danceability",  0.8),
-        ("acousticness", "target_acousticness",  0.7),
+        ("danceability", "target_danceability",  0.9),
+        ("acousticness", "target_acousticness",  0.85),
     ]
 
     for feature, pref_key, weight in numerical:

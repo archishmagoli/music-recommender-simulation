@@ -45,7 +45,9 @@ The final ranking sorts all 18 songs by total score descending and returns the t
 - **Mood is an exact match:** `"happy"` and `"upbeat"` are treated as completely different, even though they're emotionally similar — the system has no concept of mood proximity.
 - **Small catalog amplifies bias:** With only 18 songs, a single genre can dominate the top-5 if several songs share the user's favorite genre, reducing diversity in results.
 
-### User Profile
+### User Profiles
+
+#### Main User Profile
 
 The system scores every song against a single user profile — a dictionary of target values that represents what the user likes. Categorical fields (`favorite_genre`, `favorite_mood`) are compared with an exact match, while numerical fields (`target_energy`, `target_valence`, `target_danceability`, `target_acousticness`) feed into the Gaussian proximity formula. The `likes_acoustic` flag is a convenience boolean that mirrors `target_acousticness` for cases where a simple yes/no is enough.
 
@@ -67,6 +69,18 @@ This profile was designed to sit clearly between extremes — high enough energy
 
 The songs that the recommender suggested for our user profile are below (terminal output of running application):
 ![Recommended Songs](assets/terminal.png)
+
+
+#### Additional User Profiles
+Profile 1: High-Energy Pop 
+![Profile 1](profile_1.png)
+
+Profile 2: Chill Lofi 
+![Profile 2](profile_2.png)
+
+
+Profile 3: Deep Intense Rock 
+![Profile 3](profile_3.png)
 
 ---
 
@@ -107,25 +121,48 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+### Baseline Output (Final Weights)
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+Run with 6 profiles — 3 standard, 3 adversarial — using final weights: genre +1.5, mood +0.75, energy ×2.0, valence ×1.0, danceability ×0.9, acousticness ×0.85 (max score 7.0).
+
+```
+Profile: High-Energy Pop      → #1 Gym Hero (7.00)
+Profile: Chill Lofi           → #1 Library Rain (6.97)
+Profile: Deep Intense Rock    → #1 Storm Runner (7.00)
+Profile: Conflicting          → #1 Three AM Blues (4.88)  ← genre+mood bonus overpowers low energy
+Profile: The Neutralist       → #1 Midnight Coding (4.44) ← lofi wins by numerical proximity alone
+Profile: Acoustic but Intense → #1 Iron Cathedral (4.64)  ← energy beats genre in contradiction
+```
+
+---
+
+### Experiment 1 — Weight Shift: Energy ×2 (2.0 → 4.0), Genre Halved (1.5 → 0.75)
+
+**What changed:** Doubled the energy weight and halved the genre weight to test whether audio feel could dominate over categorical labels.
+
+**Result:** Rankings stayed mostly the same for standard profiles — the correct songs still ranked #1. The biggest visible change was in the **Conflicting** profile: Three AM Blues dropped out of #1 entirely, replaced by Iron Cathedral (`6.09`) and Storm Runner (`5.90`), which actually matched the `target_energy: 0.90`. The system became more "honest" about the conflict. However, scores exceeded 7.00 (e.g. Gym Hero at `8.25`), breaking the max score assumption — a math side effect of doubling one weight without adjusting others.
+
+**Conclusion:** More accurate for adversarial cases, but the uncapped scores make results harder to interpret. Not worth keeping.
+
+---
+
+### Experiment 2 — Feature Removal: Mood Check Removed
+
+**What changed:** Removed the `+0.75` mood match bonus entirely, keeping all numerical weights at final values.
+
+**Result:** The **Chill Lofi** profile showed the most interesting shift — Focus Flow (`focused` mood) jumped to #1, displacing Library Rain and Midnight Coding (both `chill`). Without mood as a tiebreaker, all three lofi songs became nearly equal by audio features alone, and Focus Flow edged out by pure numerical closeness. The **Conflicting** profile also shifted: Three AM Blues dropped to #2 (`4.13`) and Iron Cathedral took #1 (`4.14`) — the genre bonus alone couldn't carry Three AM Blues anymore.
+
+**Conclusion:** Removing mood made rankings more "feel-based" and less label-dependent. Interesting, but mood adds real signal for distinguishing songs within the same genre — keeping it in at a modest weight (`+0.75`) is the right call.
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
-
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+- **Catalog density bias:** 3 of 18 songs are lo-fi, making lo-fi disproportionately likely to surface for neutral or mid-energy users — not because it's the best match, but because the catalog has more of it near the numerical middle.
+- **Exact-match mood creates false cliffs:** `"happy"` and `"upbeat"` score identically to `"happy"` vs `"metal"` — the system has no concept of mood similarity, only equality.
+- **Genre labels are not hierarchical:** `"indie pop"` and `"pop"` are treated as completely unrelated. A user who likes indie pop gets zero genre credit for pop songs, even though the genres are closely related.
+- **No cross-feature awareness:** Energy and acousticness are scored independently. The system can't recognize that high-energy + high-acousticness is a near-impossible combination in real music, so contradictory profiles produce nonsensical results without any warning.
+- **Static profile:** The user profile never updates. There is no concept of a skip, a replay, or a session — the same 5 songs are recommended every time regardless of feedback.
 
 ---
 

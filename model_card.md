@@ -61,29 +61,21 @@ Prompts:
 
 ## 6. Limitations and Bias 
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+The clearest weakness discovered through testing is **catalog density skew**. Lo-fi makes up 3 of 18 songs in the dataset, and when we ran the Chill Lo-fi profile, all three lo-fi songs occupied the top three spots — Library Rain, Midnight Coding, and Focus Flow — with scores of 6.97, 6.95, and 6.24 respectively. The gap between #3 and #4 (Spacewalk Thoughts at 5.17) was nearly a full point, meaning a user gets the same genre recommended back to them repeatedly just because the catalog happens to have more of it. In a real system with hundreds of genres, this kind of density imbalance would create a filter bubble where certain genres dominate recommendations not because they fit the user best, but because the dataset over-represents them.
 
 ---
 
 ## 7. Evaluation  
 
-How you checked whether the recommender behaved as expected. 
+We tested three user profiles — **High-Energy Pop**, **Chill Lo-fi**, and **Deep Intense Rock** — and manually checked whether the top 5 results felt like songs that person would actually want to hear.
 
-Prompts:  
+For all three, the #1 result was a near-perfect match: Gym Hero for the pop listener, Library Rain for the lo-fi listener, Storm Runner for the rock listener. These results matched our intuition, which gave us confidence the scoring logic was working as intended.
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
+What was more surprising was the behavior just below the top result. For the **High-Energy Pop** profile, Sunrise City ranked #2 even though its mood is "happy" and the profile asked for "intense." The reason is simple once you see it: Sunrise City is still a pop song with high energy, so it picks up the genre bonus and scores well on energy and danceability — the one missing piece (mood) only costs 0.75 points out of 7.00. To a non-programmer, this looks like the system saying "I know you said intense, but this happy pop song sounds so similar that it's basically the same." That is a reasonable call in practice, but it shows that mood matters less than the numerical features when they line up strongly.
 
-No need for numeric metrics unless you created some.
+For the **Deep Intense Rock** profile, Iron Cathedral (metal) and Night Drive Loop (synthwave) scored almost identically — 4.38 vs 4.41 — even though they sound nothing alike. The reason is that their energy, danceability, and acousticness values happen to be numerically close to the rock profile's targets. The system has no concept of what "rock" actually sounds like; it only sees numbers. This was the most informative finding: a content-based recommender can be fooled by numeric coincidence when the catalog is small.
+
+For a detailed comparison of how each pair of profiles differed in their outputs, see [reflection.md](reflection.md).
 
 ---
 
