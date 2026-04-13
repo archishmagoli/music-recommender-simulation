@@ -11,14 +11,39 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+In this project, we build a **content-based music recommender** that matches songs to a user taste profile using audio features. Given a catalog of 18 songs across genres like indie pop, metal, blues, and classical, the system scores each song against a user's preferences — `favorite_genre`, `favorite_mood`, `target_energy`, `target_valence`, `target_danceability`, and `target_acousticness` — and returns the top `k` matches. Numerical features are scored using a **Gaussian proximity formula** that rewards closeness to the user's target values, while genre and mood matches add a categorical bonus. The result is a ranked list of recommendations that reflects *how a song feels* relative to the user's taste, not just whether it fits a single category.
 
 ---
 
 ## How The System Works
 Real-world recommendation systems like Spotify and YouTube use a combination of **collaborative filtering** (mapping users to each other based on listening behavior, then borrowing recommendations from similar users) and **content-based filtering** (analyzing the song itself — features like tempo, valence, acousticness, and danceability — to find tracks that *sound* like what you already like). Our system focuses on the content-based side, using those same audio features from `data/songs.csv`.
 
-In this project, we are building a custom music recommender simulation. In our recommender system, each `Song` stores 5 numerical taste signals — `energy`, `valence`, `danceability`, `acousticness`, and `tempo_bpm` — plus categorical tags for `genre` and `mood`. A `UserProfile` stores a user's preferred genre, preferred mood, target energy level, and whether they lean acoustic. The `Recommender` scores each song by measuring how close it is to those preferences — categorical matches (genre, mood) add a bonus, and numerical features like energy use a **Gaussian proximity formula** that rewards closeness to the user's target rather than just high or low values. All songs are scored and sorted, and the top `k` results are returned as recommendations.
+Each `Song` stores 5 numerical taste signals — `energy`, `valence`, `danceability`, `acousticness`, and `tempo_bpm` — plus categorical tags for `genre` and `mood`. A `UserProfile` stores a user's preferred genre, preferred mood, target energy level, and whether they lean acoustic. The `Recommender` scores each song by measuring how close it is to those preferences — categorical matches (genre, mood) add a bonus, and numerical features like energy use a **Gaussian proximity formula** that rewards closeness to the user's target rather than just high or low values. All songs are scored and sorted, and the top `k` results are returned as recommendations.
+
+![System Diagram](assets/system_diagram.png)
+
+### Algorithm Recipe
+
+Each song is scored against the user profile using the following rules:
+
+| Signal | Type | Points |
+|---|---|---|
+| Genre match | Categorical (`==`) | +2.0 |
+| Mood match | Categorical (`==`) | +1.0 |
+| Energy proximity | Gaussian × 1.5 | 0.0 – 1.5 |
+| Valence proximity | Gaussian × 1.0 | 0.0 – 1.0 |
+| Danceability proximity | Gaussian × 0.8 | 0.0 – 0.8 |
+| Acousticness proximity | Gaussian × 0.7 | 0.0 – 0.7 |
+
+**Max possible score: 7.0.** Gaussian proximity is calculated as `exp(-5 × (song_value − target)²)`, which returns 1.0 for a perfect match and decays toward 0 as the song moves further from the user's target.
+
+The final ranking sorts all 18 songs by total score descending and returns the top `k` (default: 5).
+
+### Potential Biases
+
+- **Genre over-prioritization:** A +2.0 genre bonus can push a mediocre genre match above a near-perfect audio match from a different genre — a great metal song might never surface for an indie pop listener even if the energy and mood align closely.
+- **Mood is an exact match:** `"happy"` and `"upbeat"` are treated as completely different, even though they're emotionally similar — the system has no concept of mood proximity.
+- **Small catalog amplifies bias:** With only 18 songs, a single genre can dominate the top-5 if several songs share the user's favorite genre, reducing diversity in results.
 
 ---
 
