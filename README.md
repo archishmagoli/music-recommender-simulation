@@ -45,6 +45,26 @@ The final ranking sorts all 18 songs by total score descending and returns the t
 - **Mood is an exact match:** `"happy"` and `"upbeat"` are treated as completely different, even though they're emotionally similar — the system has no concept of mood proximity.
 - **Small catalog amplifies bias:** With only 18 songs, a single genre can dominate the top-5 if several songs share the user's favorite genre, reducing diversity in results.
 
+### User Profile
+
+The system scores every song against a single user profile — a dictionary of target values that represents what the user likes. Categorical fields (`favorite_genre`, `favorite_mood`) are compared with an exact match, while numerical fields (`target_energy`, `target_valence`, `target_danceability`, `target_acousticness`) feed into the Gaussian proximity formula. The `likes_acoustic` flag is a convenience boolean that mirrors `target_acousticness` for cases where a simple yes/no is enough.
+
+The profile below is the one used in this simulation — it represents a listener who gravitates toward upbeat, moderately high-energy indie pop, leans produced over acoustic, and values positive-sounding songs:
+
+```python
+user_prefs = {
+    "favorite_genre": "indie pop",
+    "favorite_mood": "happy",
+    "target_energy": 0.72,
+    "target_valence": 0.75,
+    "target_danceability": 0.76,
+    "target_acousticness": 0.30,
+    "likes_acoustic": False
+}
+```
+
+This profile was designed to sit clearly between extremes — high enough energy to distinguish it from chill lo-fi (~0.35–0.42) but not so extreme that it collapses into metal or rock territory (~0.91–0.97).
+
 ---
 
 ## Getting Started
