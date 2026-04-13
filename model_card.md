@@ -2,60 +2,47 @@
 
 ## 1. Model Name  
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+**VibeFinder 1.0**
 
 ---
 
 ## 2. Intended Use  
 
-Describe what your recommender is designed to do and who it is for. 
+VibeFinder suggests songs from a small catalog based on a user's stated taste profile. It is built for classroom exploration — not for real users or real music services.
 
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+It assumes the user already knows their preferences and can describe them upfront (favorite genre, mood, energy level, etc.). It should not be used to recommend music to people who haven't provided explicit preferences, and it should not be treated as a substitute for a production recommender system.
 
 ---
 
 ## 3. How the Model Works  
 
-Explain your scoring approach in simple language.  
+Every song in the catalog gets a score based on how closely it matches the user's taste profile. The score has two parts.
 
-Prompts:  
+First, the system checks for exact label matches. If the song's genre matches the user's favorite genre, it gets bonus points. Same for mood. These are simple yes/no checks.
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+Second, for numerical features — energy, valence, danceability, and acousticness — the system measures how close the song's value is to the user's target. A song that lands right on the target scores full points. A song that's far off scores close to zero. The scoring uses a bell curve shape, so being slightly off costs a little, but being way off costs a lot.
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+All the individual scores are added up, every song is ranked highest to lowest, and the top 5 are returned as recommendations with a plain-English explanation of what drove the score.
 
 ---
 
 ## 4. Data  
 
-Describe the dataset the model uses.  
+The catalog has 18 songs, hand-curated for this simulation. It covers 15 genres (pop, lo-fi, rock, ambient, jazz, synthwave, indie pop, hip-hop, r&b, classical, country, metal, folk, edm, blues) and 14 moods (happy, chill, intense, relaxed, moody, focused, upbeat, romantic, peaceful, nostalgic, angry, melancholic, euphoric, sad).
 
-Prompts:  
+Each song has 5 numerical features — energy, valence, danceability, acousticness, and tempo — all on a 0 to 1 scale. There are no lyrics, no release dates, no cultural context, and no audio files. The model only sees numbers.
 
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+Lo-fi is over-represented with 3 songs. Most other genres have exactly 1. The catalog does not reflect the full diversity of music taste — it leans toward Western genres and does not include classical Indian, Latin, African, or other global styles.
 
 ---
 
 ## 5. Strengths  
 
-Where does your system seem to work well  
+The system works best for users with clear, consistent preferences. If someone wants high-energy pop or chill lo-fi, the top result is an obvious match and the rankings feel intuitive.
 
-Prompts:  
+The bell curve scoring is a strength — a song that's slightly off still gets partial credit instead of being completely ignored. This means the top 5 list has gradual variation rather than a sharp cliff between results.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+The explanation output is transparent. Every recommendation comes with a reason like "genre match (+1.5), energy proximity (+1.98)" so it's always clear why a song ranked where it did. That kind of explainability is something real systems like Spotify rarely surface to users.
 
 ---
 
@@ -81,23 +68,18 @@ For a detailed comparison of how each pair of profiles differed in their outputs
 
 ## 8. Future Work  
 
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+- **Mood and genre similarity:** Instead of exact string matching, group related labels together. "Happy" and "upbeat" should be considered close, and "pop" and "indie pop" should share partial credit.
+- **Diversity cap:** Add a rule that prevents more than 2 songs from the same genre appearing in the top 5, so results don't collapse into a single genre just because the catalog has more of it.
+- **Feedback loop:** Let the profile update based on what the user actually plays. If a song gets skipped, reduce the weight for features it had. If a song gets replayed, boost them. Right now the system recommends the same 5 songs every single time.
 
 ---
 
 ## 9. Personal Reflection  
 
-A few sentences about your experience.  
+The biggest learning moment for me in the project was designing the weighted scoring logic. Seeing how assigning different point values to genre, mood, and energy actually shifted which songs surfaced — and why — made the whole idea of a "scoring rule" concrete in a way that just reading about it wouldn't have. Watching the weights get rebalanced after the adversarial profiles exposed the genre-over-prioritization problem was a good reminder that even small numbers carry real consequences.
 
-Prompts:  
+Using AI tools throughout this project changed how I think about the search process itself. It wasn't just about finding answers faster — it was about figuring out what to search for and how to frame the problem in the first place. That kind of intent-based assistance made it easier to go from a vague idea ("songs that feel similar") to a specific implementation (Gaussian proximity on normalized features).
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+What surprised me most was how much the system felt like real recommendations even with only 18 songs and a handful of math operations. The results weren't random; they had reasons, and those reasons made sense. It was a good reminder that a lot of what feels "intelligent" in consumer apps to me might be simpler under the hood than it appears.
+
+If I extended this project, the first thing I'd do is test it against a much larger dataset — hundreds or thousands of songs — to see whether the scoring logic actually holds up or whether it only worked because the catalog was small enough to tune by hand.
